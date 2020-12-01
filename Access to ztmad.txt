@@ -1,0 +1,26 @@
+/*Connect PHP line */
+define('DB_HOST', '127.0.0.1');//DB_HOST:  generalmente suele ser "127.0.0.1"
+define('DB_USER', 'denis_valqui');//Usuario de tu base de datos
+define('DB_PASS', '2!twam=P2KVM');//Contraseña del usuario de la base de datos
+define('DB_NAME', 'db_usuariostest');//Nombre de la base de datos
+
+Connect DB line
+HOST: zonatopmusic.com
+username : mauricioger
+password: Mauricio1$
+db: db_usuariostest
+
+FTP 
+
+ZonaTop Music
+
+Servidor 107.180.2.95
+usuario: af9vrax3jr17
+contraseña:5OHQ*h6x
+puerto: 21
+
+cpanel
+
+https://a2plcpnl0092.prod.iad2.secureserver.net:2083/logout/?locale=es
+usuario: af9vrax3jr17
+contraseña:5OHQ*h6x
