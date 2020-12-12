@@ -1,4 +1,4 @@
-    <aside class="main-sidebar"><!-- Left side column. contains the logo and sidebar -->
+5    <aside class="main-sidebar"><!-- Left side column. contains the logo and sidebar -->
         <section class="sidebar"><!-- sidebar: style can be found in sidebar.less -->
             <div class="user-panel"> <!-- Sidebar user panel -->
                 <div class="pull-left image">

@@ -19,8 +19,8 @@ if(!empty($_POST) && isset($_SESSION["user_id"])){
 	$description = $_POST["description"];
     $filename = $_POST["filename"];
 
-    $sql = "insert into file (code,filename,description,is_folder,is_public,user_id,created_at) ";
-	$sql .= "value (\"$code\",\"$filename\",\"$description\",1,$is_public,$user_id,NOW())";
+    $sql = "insert into file (code,filename,description,is_public,is_folder,user_id,created_at)";
+	$sql .= "value (\"$code\",\"$filename\",\"$description\",$is_public,1,$user_id,NOW())";
 
 	$query = mysqli_query($con, $sql);
 	if ($query) {

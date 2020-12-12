@@ -15,23 +15,22 @@ if(!empty($_POST) && isset($_SESSION["user_id"])){
 
 	$code= $code;
 	$is_public = isset($_POST["is_public"])?1:0;
-	$folder_id = $_POST["folder_id"]!="" ? $_POST["folder_id"]:"NULL";
-	$folder_id;
-
+	$folder_id = $_POST["folder_id"]!="" ? $_POST["folder_id"]:"";
 	$user_id=$_SESSION["user_id"];
 	$description = $_POST["description"];
 	$created_at = "NOW()";
-
 
 	$handle = new Upload($_FILES['filename']);
 	if ($handle->uploaded) {
 		$url="../storage/data/".$_SESSION["user_id"];
 		$handle->Process($url);
 		if($handle->processed){
-	    $filename = $handle->file_dst_name;
-
-		$sql = "INSERT INTO file (code, filename, description, is_public, user_id, is_folder, folder_id, created_at) VALUES (\"$code\",\"$filename\",\"$description\", $is_public, $user_id, 0, $folder_id, NOW());";
-
+		$dataname = $handle->file_dst_name;
+		if($folder_id){
+			$sql="INSERT INTO datafiles(CODE ,dataname,description,is_public,file_id,created_at)VALUES('$code','$dataname','$description',$is_public,$folder_id,NOW());";
+		}else{
+			$sql = "INSERT INTO file(code,filename,description,is_public,is_folder,user_id,created_at)VALUES('$code','$dataname','$description',$is_public,0,$user_id,NOW());";
+		}
 		$query=mysqli_query($con, $sql);
 		if ($query) {
 			// echo "archivo agregado con exito";

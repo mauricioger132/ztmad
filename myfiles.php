@@ -12,17 +12,11 @@
     }
     $_SESSION["tkn"]=$token;
     $folder=null;
-    if(isset($_GET["folder"]) && $_GET["folder"]!=""){
-        
-        $id_folder=$_GET["folder"];
-        $folder = mysqli_query($con,"select * from file where code=\"$id_folder\"");
 
-        while ($row=mysqli_fetch_array($folder)) {
-            $file_id_folder=$row['id']; 
-            $file_folder_id=$row['folder_id']; 
-            $file_folder_filename=$row['filename'];
-            $file_folder_code=$row['code'];
-        }
+    if(isset($_GET["folder"]) && $_GET["folder"]!=""){
+     
+        $getid=explode('&==!%',$_GET["folder"]);
+        $folder=base64_decode($getid[0]);
     }
 
 ?>
@@ -46,30 +40,48 @@
                 <div class="col-md-12">
                 <?php
                     $files = null;
-                    if(@mysqli_num_rows($folder)==0){
+                    if($folder==0){
                         if(isset($_GET["q"]) && $_GET["q"]!=""){
                             $q=$_GET["q"];
-                            $files = mysqli_query($con,"select * from file where user_id=$my_user_id and folder_id is NULL and (filename like '%$q%' or description like '%$q%') order by is_folder desc, filename asc");
-                           
+                            $files = mysqli_query($con,"SELECT * FROM FILE WHERE user_id=$my_user_id  AND (filename LIKE '%$q%' OR description LIKE '%$q%')  ORDER BY is_folder DESC, filename ASC");
                     }else{
-                        $files = mysqli_query($con,"select * from file where user_id=$my_user_id and folder_id is NULL order by is_folder desc, filename asc");
+                        $files = mysqli_query($con,"SELECT * FROM FILE WHERE user_id=$my_user_id  ORDER BY is_folder=0 DESC");
                     }
 
                     }else{
                         // search
                         if(isset($_GET["q"]) && $_GET["q"]!=""){
                             $q=$_GET["q"];
+                           
                             $files=mysqli_query($con,"select * from files where folder_id=$file_id_folder and  (filename like '%$q%' or description like '%$q%') order by created_at desc");
                         }else{
-                            // folder/folder/file.php
-                            $files=mysqli_query($con,"select * from file where folder_id=$file_id_folder order by created_at desc");
+                         
+                            $user=$_SESSION["user_id"];
+                            $file_id_folder=$folder;
 
+                            $files=mysqli_query($con,"SELECT d.id,d.code,d.dataname,d.description,d.created_at,f.user_id FROM FILE AS f  INNER JOIN datafiles AS d ON  f.id=d.file_id WHERE f.user_id=$user AND d.file_id=$file_id_folder ORDER BY d.created_at DESC");
+                            if(@mysqli_num_rows($files)===0){
+                                $rows=mysqli_query($con,"SELECT *FROM permision WHERE user_id=$user AND file_id=$file_id_folder AND shared=1");
+                                if(@mysqli_num_rows($rows)===0){
+                                   $files=mysqli_query($con,"SELECT df.id,df.code,df.dataname,df.description,df.created_at FROM permision AS p 
+                                                                INNER JOIN datafiles AS df ON p.code=df.code
+                                                                WHERE p.user_id=$user AND p.file_id=$file_id_folder AND p.shared=2");
+                                    
+                                }else{
+                                    $files=mysqli_query($con,"SELECT *FROM datafiles WHERE file_id=$file_id_folder");
+        
+                                }
+                                $us=mysqli_query($con,"SELECT user_id FROM FILE WHERE id=$file_id_folder");
+                                $us=mysqli_fetch_array($us);
+                                $us=$us['user_id'];
+                                //$files=mysqli_query($con,"SELECT d.id,d.code,d.dataname,d.description,d.created_at,f.user_id FROM FILE AS f  INNER JOIN datafiles AS d ON  f.id=d.file_id WHERE  d.file_id=$file_id_folder ORDER BY d.created_at DESC");
+                            }
                         }
                     }
                 ?>
 
 
-               <?php if(isset($_GET["folder"]) && $_GET["folder"]!="" && mysqli_num_rows($folder)==0):?>
+               <?php if(isset($_GET["folder"]) && $_GET["folder"]!="" && $folder==0):?>
                     <p class="alert alert-danger">Estas intentando acceder a una carpeta que no existe!</p>
                 <?php endif; ?>
 
@@ -89,6 +101,8 @@
                              echo "<p class='alert alert-danger'> <i class=' fa fa-exclamation-circle'></i> Hubo un error al eliminar el archivo, puede que contenga archivos dentro.</p>";
                         }elseif (isset($_GET['delinvalid'])) {
                             echo "<p class='alert alert-warning'> <i class=' fa fa-exclamation-circle'></i> Permiso Denegado!.</p>";
+                        }elseif(isset($_GET['delpermision'])){
+                            echo "<p class='alert alert-warning'> <i class=' fa fa-exclamation-circle'></i> Hubo un error al eliminar el archivo,debes de quitar los permisos.</p>";
                         }
                     ?>
 
@@ -115,81 +129,99 @@
                                     </tr>
                                 </thead>    
                                 <tbody>    
-                                    <?php foreach($files as $file):?>
+                                    <?php foreach($files as $file):
+                                            $alphabeth ="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWYZ1234567890_-";
+                                            $token = "";
+                                            for($i=0;$i<6;$i++){
+                                                $token .= $alphabeth[rand(0,strlen($alphabeth)-1)];
+                                            }
+                                            $file['id'];
+                                            $hash=base64_encode($file['id']);
+                                            $id= $hash.'&==!%'.$token.'==' ;
+                                            $code=$file['code'];
+                                     ?>
                                     <tr>
                                         <td style="width: 250px">
-                                        <?php if($file['is_folder']):?>
-                                            <a href="myfiles.php?folder=<?php echo $file['code'];?>">
-                                                <i class="fa fa-folder"></i>
+                                        <?php $folder=isset($file['is_folder'])?$folder=$file['is_folder'] :""; ?>
+                                        <?php if($folder):?>
+                                            <a href="myfiles.php?folder=<?php echo $id?>">
+                                            <i class="fa fa-folder"></i>
                                         <?php else:?>
 
-                                            <a href="file.php?code=<?php echo $file['code'];?>">
-<?php
-        //compruebbo que tipo de archivo tengo en el servidor 
-        //by abisoft
-        $url = "storage/data/".$file['user_id']."/".$file['filename'];
-        $ftype=explode(".", $url);
-
-       // if(file_exists($url)){
-           if($file['filename']!=""){
-                if(!$file['is_folder']){
-                    //comprobar si es imagen
-                    if($ftype[1]=="png" || $ftype[1]=="jpeg" || $ftype[1]=="gif" || $ftype[1]=="jpg" || $ftype[1]=="bmp"){
-                        echo "<i class='fa fa-file-image-o'></i>";
-                    }
-                    //compruebo si es audio
-                    elseif($ftype[1]=="mp3" || $ftype[1]=="wav" || $ftype[1]=="wma" || $ftype[1]=="ogg" || $ftype[1]=="mp4"){
-                        echo "<i class='fa fa-file-audio-o'></i>";
-                    }
-                    //comrpuebo si son zip, rar u otros
-                    elseif ($ftype[1]=="zip" || $ftype[1]=="rar" || $ftype[1]=="tgz" || $ftype[1]=="tar") {
-                        echo "<i class='fa fa-file-archive-o'></i>";
-                    }
-                    //compruebo si es un archivo de codigo
-                    elseif ($ftype[1]=="php" || $ftype[1]=="php3" || $ftype[1]=="html" || $ftype[1]=="css" || $ftype[1]=="py" || $ftype[1]=="java" || $ftype[1]=="js" || $ftype[1]=="sql") {
-                        echo "<i class='fa fa-file-code-o'></i>";
-                    }
-                    //compruebo si es el archivo es de tipo pdf
-                    elseif ($ftype[1]=="pdf") {
-                        echo "<i class='fa fa-file-pdf-o'></i>";
-                    }
-                     //compruebo si es el archivo es excel
-                    elseif ($ftype[1]=="xlsx") {
-                        echo "<i class='fa fa-file-excel-o'></i>";
-                    }
-                     //compruebo si es el archivo es de powerpoint
-                    elseif ($ftype[1]=="pptx") {
-                        echo "<i class='fa fa-file-powerpoint-o'></i>";
-                    }
-                     //compruebo si es el archivo es de word
-                    elseif ($ftype[1]=="docx") {
-                        echo "<i class='fa fa-file-word-o'></i>";
-                    }
-                     //compruebo si es el archivo es de texto
-                    elseif ($ftype[1]=="txt") {
-                        echo "<i class='fa fa-file-text-o'></i>";
-                    }
-                     //compruebo si es el archivo es de video
-                    elseif ($ftype[1]=="avi" || $ftype[1]=="avi" || $ftype[1]=="asf" || $ftype[1]=="dvd" || $ftype[1]=="m1v" || $ftype[1]=="movie" || $ftype[1]=="mpeg" || $ftype[1]=="wn" || $ftype[1]=="wmv") {
-                        echo "<i class='fa fa-file-video-o'></i>";
-                    }else{
-                    echo "<i class='fa fa-file-o'></i>";
-                }
-            }
-        }
-      //  }
-?>            
+                                        <a href="file.php?code=<?php echo $code?>">
+                                        <?php
+                                                //compruebbo que tipo de archivo tengo en el servidor 
+                                                //by abisoft
+                                                $name=isset($file['filename'])? $file['filename'] :$file['dataname'];
+                                                //if(isset($file['user_id'])){
+                                                    $user_id=isset($file['user_id'])?$file['user_id']:$us;
+                                                    $url = "storage/data/".$user_id."/".$name;
+                                                    
+                                                //}
+                                            
+                                                $ftype=explode(".", $url);
+                                                
+                                            // if(file_exists($url)){
+                                                if($name!=""){
+                                                        //if(!$file['is_folder']){
+                                                            //comprobar si es imagen
+                                                            if($ftype[1]=="png" || $ftype[1]=="jpeg" || $ftype[1]=="gif" || $ftype[1]=="jpg" || $ftype[1]=="bmp"){
+                                                                echo "<i class='fa fa-file-image-o'></i>";
+                                                            }
+                                                            //compruebo si es audio
+                                                            elseif($ftype[1]=="mp3" || $ftype[1]=="wav" || $ftype[1]=="wma" || $ftype[1]=="ogg" || $ftype[1]=="mp4"){
+                                                                echo "<i class='fa fa-file-audio-o'></i>";
+                                                            }
+                                                            //comrpuebo si son zip, rar u otros
+                                                            elseif ($ftype[1]=="zip" || $ftype[1]=="rar" || $ftype[1]=="tgz" || $ftype[1]=="tar") {
+                                                                echo "<i class='fa fa-file-archive-o'></i>";
+                                                            }
+                                                            //compruebo si es un archivo de codigo
+                                                            elseif ($ftype[1]=="php" || $ftype[1]=="php3" || $ftype[1]=="html" || $ftype[1]=="css" || $ftype[1]=="py" || $ftype[1]=="java" || $ftype[1]=="js" || $ftype[1]=="sql") {
+                                                                echo "<i class='fa fa-file-code-o'></i>";
+                                                            }
+                                                            //compruebo si es el archivo es de tipo pdf
+                                                            elseif ($ftype[1]=="pdf") {
+                                                                echo "<i class='fa fa-file-pdf-o'></i>";
+                                                            }
+                                                            //compruebo si es el archivo es excel
+                                                            elseif ($ftype[1]=="xlsx") {
+                                                                echo "<i class='fa fa-file-excel-o'></i>";
+                                                            }
+                                                            //compruebo si es el archivo es de powerpoint
+                                                            elseif ($ftype[1]=="pptx") {
+                                                                echo "<i class='fa fa-file-powerpoint-o'></i>";
+                                                            }
+                                                            //compruebo si es el archivo es de word
+                                                            elseif ($ftype[1]=="docx") {
+                                                                echo "<i class='fa fa-file-word-o'></i>";
+                                                            }
+                                                            //compruebo si es el archivo es de texto
+                                                            elseif ($ftype[1]=="txt") {
+                                                                echo "<i class='fa fa-file-text-o'></i>";
+                                                            }
+                                                            //compruebo si es el archivo es de video
+                                                            elseif ($ftype[1]=="avi" || $ftype[1]=="avi" || $ftype[1]=="asf" || $ftype[1]=="dvd" || $ftype[1]=="m1v" || $ftype[1]=="movie" || $ftype[1]=="mpeg" || $ftype[1]=="wn" || $ftype[1]=="wmv") {
+                                                                echo "<i class='fa fa-file-video-o'></i>";
+                                                            }else{
+                                                            echo "<i class='fa fa-file-o'></i>";
+                                                        }
+                                                    //}
+                                                }
+                                            //  }
+                                        ?>            
                                         <?php endif; ?>
-                                        <?php echo $file['filename']; ?></a>
+                                        <?php echo $name=isset($file['filename'])?$file['filename']:$file['dataname']; ?></a>
                                         </td>
                                         <td style="width: 350px"><?php echo $file['description']; ?></td>
                                         <td>
                                         <?php 
-                                            $url = "storage/data/".$file['user_id']."/".$file['filename'];
+                                            $user_id=isset($file['user_id'])?$file['user_id']:$us;
+                                            $url = "storage/data/".$user_id."/".$name;
                                             if(file_exists($url)){
                                                 $fsize = filesize($url);
-                                                if($file['filename']!=""){
-                                                    if(!$file['is_folder']){
+                                                if($name!=""){
+                                                    //if(!$file['is_folder']){
                                                         if($fsize>1000*1000*1000){
                                                             echo ($fsize/1000*1000*1000)."Gb";
                                                         }
@@ -202,7 +234,7 @@
                                                         else if($fsize>0){
                                                             echo $fsize."B";
                                                         }
-                                                    }
+                                                    //}
                                                 }
                                             }
                                         ?>

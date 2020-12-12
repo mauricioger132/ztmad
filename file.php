@@ -7,20 +7,32 @@
 <?php 
 $file = null;
 if(isset($_GET["code"]) && $_GET["code"]!=""){
-    $id_code=$_GET["code"];
-    $file=mysqli_query($con, "select * from file where code=\"$id_code\"");
-
+    $code=$_GET["code"];
+ 
+    $file=mysqli_query($con, "select * from file where code=\"$code\"");    
+    if(mysqli_num_rows($file)===0){
+    $file=mysqli_query($con, "SELECT f.id,
+                                    f.user_id,
+                                    df.is_public,
+                                    df.code,
+                                    df.dataname,
+                                    df.description,
+                                    df.created_at,
+                                    df.download 
+                                FROM datafiles AS df 
+                                INNER JOIN FILE AS f ON df.file_id=f.id where df.code=\"$code\""); 
+    }
     while ($row=mysqli_fetch_array($file)) {
         $file_id=$row['id'];
         $is_public=$row['is_public'];
         $user_id=$row['user_id'];
         $code=$row['code'];
-        $filename=$row['filename'];
+        $filename=isset($row['filename'])?$row['filename']:$row['dataname'];
         $description=$row['description'];
         $created_at=$row['created_at'];
         $file_count=$row['download'];
 
-        $folder_id=$row['folder_id'];
+        $folder_id=$row['id'];
 
     }
 }
@@ -61,6 +73,7 @@ else if ($go==false && !$is_owner){
         print "<script>alert(\"Acceso Denegado!\")</script>";
         echo "<script>window.location='shared.php';</script>";
     }
+    
 }
 ?>
 
@@ -94,7 +107,7 @@ else if ($go==false && !$is_owner){
                         <a href="action/dwnfl.php?code=<?php echo $code;?>&id=<?php echo $file_id;?>&count=<?php echo $file_count;?>" class="btn btn-default"><i class="fa fa-download"></i> Descargar</a>
                     </div>
                     <?php
-                       $url=$_SERVER["HTTP_HOST"]."/project/abisoft/belbox/file.php?code=".$_GET['code'];
+                       $url=$_SERVER["HTTP_HOST"]."/project/abisoft/belbox/file.php?code=".$code;
                     ?>
                     <div style="padding-right:6px;" class="btn-group  pull-right">
                         <p style="display: none;" id="copy"><?php echo $url?></p>
@@ -126,7 +139,8 @@ else if ($go==false && !$is_owner){
                    <p class="text-muted text-right"><i class="fa fa-clock-o"></i> <?php echo $created_at;?></p>
                     <br><br>
                     <?php 
-                        $comments = mysqli_query($con, "select * from comment where file_id=".$file_id);
+                  
+                        $comments = mysqli_query($con, "SELECT * FROM COMMENT WHERE CODE='$code'" );
                         $count=mysqli_num_rows($comments);
                     ?>
                     <?php
@@ -177,7 +191,7 @@ else if ($go==false && !$is_owner){
                         <div class="box-footer">
                         <form method="post" action="action/addfilecomment.php">
                             <div class="input-group">
-                                <input type="hidden" value="<?php echo $file_id?>" name="id">
+                                <input type="hidden" value="<?php echo $code?>" name="code">
                                 <input name="comment" required class="form-control" placeholder="Escribe un comentario...">
                                 <div class="input-group-btn">
                                     <button type="submit" class="btn btn-success"><i class="fa fa-comments"></i></button>

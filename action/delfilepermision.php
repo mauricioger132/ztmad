@@ -12,6 +12,8 @@
 		}
 
 		$file=mysqli_query($con,"select * from file where id=$file_id");
+		$update_query="UPDATE FILE SET shared_file=0 WHERE id=".$file_id;
+		$result =mysqli_query($con, $update_query);
 		while ($row=mysqli_fetch_array($file)) {
 			$file_code=$row['code'];
 		}

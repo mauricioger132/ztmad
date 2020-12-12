@@ -4,7 +4,7 @@
     include "header.php";
     include "aside.php"; 
 
-    $folders = mysqli_query($con, "select * from file where user_id=$my_user_id and is_folder=1 and folder_id is NULL order by created_at desc");
+    $folders = mysqli_query($con, "SELECT * FROM FILE WHERE user_id=$my_user_id AND is_folder=1 ORDER BY created_at DESC");
 
 ?>
 

@@ -2,13 +2,19 @@
     $active2="active"; 
     include "head.php"; 
     include "header.php"; 
-    include "aside.php"; 
+    //include "aside.php"; 
 
     $id_code=$_GET["id"];
     $file = mysqli_query($con,"select * from file where code=\"$id_code\"");
+    $count=mysqli_num_rows($file);
+    if($count===0){
+      
+        $file = mysqli_query($con,"select * from datafiles where code=\"$id_code\"");
+    }
+    
     while ($rows=mysqli_fetch_array($file)) {
         $file_id=$rows['id'];
-        $file_filename=$rows['filename'];
+        $file_filename=isset($rows['filename']) ? $rows['filename'] : $rows['dataname'];
         $file_code=$rows['code'];
     }
 ?>
@@ -36,6 +42,14 @@
                         }elseif (isset($_GET['error3']) && isset($_GET['not_found'])) {
                             echo "<p class='alert alert-danger'> <i class=' fa fa-exclamation-circle'></i> El usuario no existe!</p>";
                         }
+                        elseif (isset($_GET['permision'])) {
+                            echo "<p class='alert alert-danger'> <i class=' fa fa-exclamation-circle'></i> Está carpeta ya esta asignada globalmente cambia el permiso!</p>";
+                        }
+                        elseif (isset($_GET['duplicado'])) {
+                            echo "<p class='alert alert-danger'> <i class=' fa fa-exclamation-circle'></i> El permiso ya está asignado al correo correspondiente!</p>";
+                        }
+
+                        
                     ?>
                     <?php
                         // get messages
@@ -65,7 +79,7 @@
                                 </div>
                             </div><!-- /.box-body -->
                             <div class="box-footer">
-                                <input type="hidden" name="file_id" value="<?php echo $file_id;?>">
+                                <input type="hidden" name="file_code" value="<?php echo $file_code;?>">
                                 <button type="submit" class="btn btn-primary">Agregar</button>
                             </div>
                         </form>
@@ -74,9 +88,9 @@
             </div><!-- /.row -->
             <div class="row">
                 <div class="col-md-10 col-md-offset-1">
-                    <?php 
-                    $permisions = mysqli_query($con,"select * from permision where file_id=$file_id");
-                    $count=mysqli_num_rows($permisions);
+                    <?php
+                        $permisions = mysqli_query($con,"select * from permision where code='$file_code'");
+                        $count=mysqli_num_rows($permisions);
                     ?>
                 <?php if($count>0):?>
                 <div class="box">

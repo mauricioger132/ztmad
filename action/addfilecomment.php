@@ -4,20 +4,30 @@
 
 if(!empty($_POST)){
 
-	$id=$_POST["id"];
-	$file=mysqli_query($con, "select * from file where id=$id");
+	$code=$_POST["code"];
+	
+	$file=mysqli_query($con, "select * from file where code='$code'");
+	if(mysqli_num_rows($file)===0){
+
+		$file=mysqli_query($con,"SELECT f.id,
+										f.user_id,
+										df.code
+								FROM datafiles AS df 
+								INNER JOIN FILE AS f ON df.file_id=f.id where df.code=\"$code\"");
+	}
 	while ($rowc=mysqli_fetch_array($file)) {
+		$id=$rowc['id'];
 		$code=$rowc['code'];
+		
 	}
 
 
 	$user_id= $_SESSION["user_id"];
-	$file_id = $_POST["id"];
+	$file_id = $id;
 	$comment= $_POST["comment"];
 	$created_at = "NOW()";
-
-	$sql = "insert into comment (comment,file_id,user_id,created_at) ";
-	$sql .= "value (\"$comment\",\"$file_id\",$user_id,$created_at)";
+	$sql = "insert into comment (comment,file_id,user_id,code,created_at) ";
+	$sql .= "value (\"$comment\",\"$file_id\",$user_id,'$code',$created_at)";
 
 	$query=mysqli_query($con, $sql);
 	if ($query) {
